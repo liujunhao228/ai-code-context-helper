@@ -4,9 +4,9 @@ GUI组件模块
 该模块负责创建和管理应用程序的图形用户界面元素，包括窗口、菜单、
 按钮、标签、树视图等。提供了用户界面的初始化、更新和事件处理。
 """
-
+import os
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox, filedialog
 
 from ai_code_context_helper.tooltip import create_tooltip
 from ai_code_context_helper.config import (
@@ -23,6 +23,8 @@ from ai_code_context_helper.config import (
     SIZE_COLUMN_WIDTH,
     SIZE_COLUMN_MIN_WIDTH,
 )
+from ai_code_context_helper.markdown_exporter import generate_markdown
+from ai_code_context_helper.tree_operations import TreeOperations
 
 
 
@@ -346,6 +348,19 @@ class GUIComponents:
             self.parent.format_btn, self.parent.texts["tooltip_format_settings"]
         )
 
+        # Markdown格式设置按钮
+        self.parent.markdown_format_btn = ttk.Button(
+            left_options,
+            text=self.parent.texts["markdown_format_settings"],
+            command=self.parent.show_markdown_settings,
+        )
+        self.parent.markdown_format_btn.pack(anchor=tk.W, pady=5)
+        create_tooltip(
+            self.parent.markdown_format_btn,
+            self.parent.texts["tooltip_markdown_format_settings"]
+        )
+
+
         # 右侧选项区 - 包含数值和文本输入
         right_options = ttk.Frame(options_frame)
         right_options.pack(side=tk.LEFT, fill=tk.X, expand=True)
@@ -438,6 +453,15 @@ class GUIComponents:
         )
         self.parent.save_btn.pack(side=tk.LEFT, padx=5)
         create_tooltip(self.parent.save_btn, self.parent.texts["tooltip_save_file"])
+
+        # 导出为Markdown按钮
+        self.parent.export_btn = ttk.Button(
+            btn_frame,
+            text=self.parent.texts["export_markdown"],
+            command=self.export_markdown
+        )
+        self.parent.export_btn.pack(side=tk.LEFT, padx=5)
+        create_tooltip(self.parent.export_btn, self.parent.texts["tooltip_export_markdown"])
 
         # 目录树视图区域 - 显示文件和文件夹的树形结构
         self.parent.result_frame = ttk.LabelFrame(
@@ -611,6 +635,8 @@ class GUIComponents:
         self.parent.copy_btn.configure(text=self.parent.texts["copy_tree"])
         self.parent.save_btn.configure(text=self.parent.texts["save_to_file"])
         self.parent.format_btn.configure(text=self.parent.texts["format_settings"])
+        self.parent.markdown_format_btn.configure(text=self.parent.texts["markdown_format_settings"])
+        self.parent.export_btn.configure(text=self.parent.texts["export_markdown"])
 
         # 更新置顶按钮文本
         if hasattr(self.parent, "topmost_btn"):
@@ -690,9 +716,14 @@ class GUIComponents:
         create_tooltip(self.parent.update_btn, self.parent.texts["tooltip_update_tree"])
         create_tooltip(self.parent.copy_btn, self.parent.texts["tooltip_copy_tree"])
         create_tooltip(self.parent.save_btn, self.parent.texts["tooltip_save_file"])
+        create_tooltip(self.parent.export_btn, self.parent.texts["tooltip_export_markdown"])
         create_tooltip(
             self.parent.easy_multiselect_cb,
             self.parent.texts["tooltip_easy_multiselect"],
+        )
+        create_tooltip(
+            self.parent.markdown_format_btn,
+            self.parent.texts["tooltip_markdown_format_settings"]
         )
 
         create_tooltip(
@@ -721,3 +752,87 @@ class GUIComponents:
                 self.parent.use_gitignore_cb,
                 self.parent.texts["tooltip_use_gitignore"],
             )
+
+    def export_markdown(self):
+        """
+        导出选中节点及其子节点的所有文件到Markdown
+        """
+        selected_items = self.parent.tree.selection()
+        if not selected_items:
+            self.parent.status_var.set(self.parent.texts.get("status_no_selection", "未选中任何项"))
+            return
+
+        # 收集文件列表和对应的选中节点路径
+        files_with_base = []
+        
+        for item_id in selected_items:
+            # 获取选中节点的路径
+            base_path = None
+            for path, tree_id in self.parent.tree_items.items():
+                if tree_id == item_id:
+                    base_path = path
+                    break
+            
+            if not base_path:
+                continue
+                
+            # 获取当前节点下所有文件
+            file_paths = self.parent.tree_ops.get_all_files_under_node(item_id)
+            
+            # 为每个文件添加对应的选中节点路径
+            for file_path in file_paths:
+                files_with_base.append((file_path, base_path))
+
+        if not files_with_base:
+            self.parent.status_var.set(self.parent.texts.get("status_no_text_files", "未找到可导出的文本文件"))
+            return
+        
+        # 根据支持的扩展名过滤文件
+        supported_exts = set(self.parent.settings.supported_extensions.keys())
+        filtered_files = []
+        for file_path, base_path in files_with_base:
+            _, ext = os.path.splitext(file_path)
+            if ext.lower() in supported_exts:
+                filtered_files.append((file_path, base_path))
+        
+        if not filtered_files:
+            self.parent.status_var.set("没有符合条件的文本文件（仅支持特定扩展名）")
+            return
+
+        # 设置默认文件名为项目根目录名
+        base_dir = self.parent.dir_path.get().strip()
+        if base_dir:
+            # 提取目录名
+            dir_name = os.path.basename(base_dir)
+            if not dir_name:  # 如果路径以分隔符结尾
+                dir_name = os.path.basename(os.path.dirname(base_dir))
+            default_filename = f"{dir_name}.md"
+        else:
+            default_filename = "export.md"
+
+        output_path = filedialog.asksaveasfilename(
+            defaultextension=".md",
+            filetypes=[("Markdown 文件", "*.md")],
+            initialfile=default_filename  # 设置默认文件名
+        )
+        if not output_path:
+            return
+
+        # 调用Markdown生成逻辑
+        include_markers = self.parent.settings.include_markers
+        show_encoding = self.parent.settings.show_encoding
+
+        success, errors = generate_markdown(
+            output_path=output_path,
+            files=filtered_files,  # 使用过滤后的文件列表（包含文件路径和选中节点路径）
+            include_markers=include_markers,
+            show_encoding=show_encoding
+        )
+
+        # 更新状态栏
+        if success > 0:
+            self.parent.status_var.set(
+                self.parent.texts.get("status_export_success", "成功导出{0}个文件").format(success)
+            )
+        if errors:
+            messagebox.showerror("导出错误", "\n".join(errors))

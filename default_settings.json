@@ -9,12 +9,30 @@
   "use_relative_path": true,
   "max_depth": 0,
   "file_filter": "",
-  "language": "en_US",
-  "directory_history": [],
-  "show_advanced_options": false,
+  "language": "zh_CN",
+  "directory_history": [
+    {
+      "path": "D:\\blblcd",
+      "expanded_paths": [
+        ".",
+        "blblcd"
+      ]
+    },
+    {
+      "path": "C:\\1",
+      "expanded_paths": [
+        ".",
+        "2",
+        "2\\a",
+        "2\\b",
+        "2\\c"
+      ]
+    }
+  ],
+  "show_advanced_options": true,
   "enable_easy_multiselect": true,
   "use_gitignore": true,
-  "is_topmost": false, 
+  "is_topmost": false,
   "include_markers": true,
   "show_encoding": false,
   "supported_extensions": {
@@ -54,5 +72,5 @@
     ".cs": "csharp",
     ".vb": "vbnet",
     ".fs": "fsharp"
-  },
+  }
 }

@@ -66,3 +66,43 @@ CHANGELOG_URL = (
 # 预设文本
 QRCODE_WINDOW_TITLE = "关注公众号"
 QRCODE_TEXT = "扫码关注公众号，支持作者更新~"
+
+# 默认拓展名匹配规则（如需自定义，JSON配置文件中修改也可（其优先级更高））
+SUPPORTED_EXTENSIONS = {
+    '.py': 'python',
+    '.js': 'javascript',
+    '.jsx': 'javascript',
+    '.ts': 'typescript',
+    '.css': 'css',
+    '.html': 'html',
+    '.htm': 'html',
+    '.xml': 'xml',
+    '.json': 'json',
+    '.sh': 'shell',
+    '.bat': 'batch',
+    '.ps1': 'powershell',
+    '.md': 'markdown',
+    '.yaml': 'yaml',
+    '.yml': 'yaml',
+    '.txt': 'text',
+    '.c': 'c',
+    '.cpp': 'cpp',
+    '.h': 'c',
+    '.hpp': 'cpp',
+    '.java': 'java',
+    '.go': 'go',
+    '.rs': 'rust',
+    '.php': 'php',
+    '.rb': 'ruby',
+    '.swift': 'swift',
+    '.kt': 'kotlin',
+    '.scala': 'scala',
+    '.dart': 'dart',
+    '.lua': 'lua',
+    '.pl': 'perl',
+    '.r': 'r',
+    '.sql': 'sql',
+    '.cs': 'csharp',
+    '.vb': 'vbnet',
+    '.fs': 'fsharp'
+}

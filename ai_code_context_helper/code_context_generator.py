@@ -41,6 +41,7 @@ from ai_code_context_helper.config import (
     RESOURCES_DIR,
     ICON_FILENAME,
 )
+from ai_code_context_helper.tooltip import create_tooltip
 
 
 class CodeContextGenerator:
@@ -60,6 +61,10 @@ class CodeContextGenerator:
 
         # 添加窗口置顶状态变量
         self.is_topmost = tk.BooleanVar(value=self.settings.is_topmost_value)
+
+        # Markdown设置相关的变量
+        self.include_markers = tk.BooleanVar(value=True)
+        self.show_encoding = tk.BooleanVar(value=False)
 
         # 从设置中获取当前语言和文本
         self.current_language = self.settings.current_language
@@ -129,7 +134,7 @@ class CodeContextGenerator:
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
     
-        # 先居中窗口，然后显示 - 修改这里
+        # 先居中窗口，然后显示
         self.gui.center_window(self.root)
         self.root.deiconify()  # 显示窗口
 
@@ -820,7 +825,6 @@ class CodeContextGenerator:
 
     def toggle_advanced_options(self):
         """切换高级选项的显示状态"""
-        # 保留这个方法，因为它是核心功能
         self.show_advanced_options = not self.show_advanced_options
 
         # 更新设置
@@ -835,6 +839,36 @@ class CodeContextGenerator:
             self.advanced_options_frame.pack_forget()
             self.toggle_btn.configure(text=self.texts["show_options"])
             self.status_var.set(self.texts["status_options_hidden"])
+
+    def generate_markdown(self):
+        """
+        生成 Markdown 文件的核心方法
+        """
+        selected_files = self.tree_ops.get_selected_files()
+        if not selected_files:
+            self.status_var.set("请至少选择一个文件")
+            return
+
+        # 弹出保存路径对话框
+        output_path = filedialog.asksaveasfilename(
+            defaultextension=".md",
+            filetypes=[("Markdown 文件", "*.md")]
+        )
+        if not output_path:
+            return
+
+        # 调用生成逻辑
+        try:
+            markdown_content = generate_markdown_content(
+                selected_files,
+                include_markers=self.include_markers.get(),
+                show_encoding=self.show_encoding.get()
+            )
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(markdown_content)
+            self.status_var.set(f"成功生成 Markdown 到 {output_path}")
+        except Exception as e:
+            self.status_var.set(f"生成失败: {str(e)}")
 
     # 添加委托方法，将方法调用转发到对应模块
     def generate_tree(self):
@@ -1072,3 +1106,77 @@ class CodeContextGenerator:
                 self._show_window()
         except Exception as e:
             print(f"切换窗口可见性时出错: {e}")
+
+    def show_markdown_settings(self):
+        """显示Markdown格式设置对话框"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(self.texts["markdown_settings"])
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.resizable(False, False)
+        
+        # 设置对话框大小
+        dialog.geometry("400x200")
+        
+        # 创建复选框 - 添加开始/结束标记
+        include_markers_frame = ttk.Frame(dialog)
+        include_markers_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        include_markers_cb = ttk.Checkbutton(
+            include_markers_frame,
+            text=self.texts["include_markers"],
+            variable=self.include_markers
+        )
+        include_markers_cb.pack(side=tk.LEFT)
+        create_tooltip(include_markers_cb, self.texts["tooltip_include_markers"])
+        
+        # 创建复选框 - 显示文件编码
+        show_encoding_frame = ttk.Frame(dialog)
+        show_encoding_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        show_encoding_cb = ttk.Checkbutton(
+            show_encoding_frame,
+            text=self.texts["md_show_encoding"],
+            variable=self.show_encoding
+        )
+        show_encoding_cb.pack(side=tk.LEFT)
+        create_tooltip(show_encoding_cb, self.texts["tooltip_md_show_encoding"])
+        
+        # 按钮区域
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(fill=tk.X, padx=10, pady=20)
+        
+        def _on_settings_saved():
+            """保存Markdown设置并关闭对话框"""
+            try:
+                # 保存设置
+                self.settings.include_markers = self.include_markers.get()
+                self.settings.show_encoding = self.show_encoding.get()
+                self.settings.settings_changed = True
+                self.settings.save_settings()
+                
+                # 更新状态栏
+                self.status_var.set(self.texts["format_text_updated"])
+            except Exception as e:
+                self.status_var.set(f"保存设置失败: {str(e)}")
+                print(f"保存Markdown设置时出错: {e}")
+            finally:
+                dialog.destroy()
+        
+        # 使用项目中常用的按钮创建方式
+        ok_btn = ttk.Button(
+            btn_frame, 
+            text=self.texts["save"], 
+            command=_on_settings_saved
+        )
+        ok_btn.pack(side=tk.RIGHT, padx=5)
+        
+        cancel_btn = ttk.Button(
+            btn_frame, 
+            text=self.texts["cancel"], 
+            command=dialog.destroy
+        )
+        cancel_btn.pack(side=tk.RIGHT, padx=5)
+        
+        # 居中对话框
+        self.gui.center_window(dialog)

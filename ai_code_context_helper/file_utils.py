@@ -440,3 +440,14 @@ def read_file_content(path_obj):
 
     except Exception as e:
         raise Exception(f"无法读取文件: {str(e)}")
+
+def has_hidden_attribute(filepath):
+    """检查Windows系统下的隐藏文件属性"""
+    try:
+        if os.name == 'nt':
+            import win32api, win32con
+            attrs = win32api.GetFileAttributes(filepath)
+            return attrs & (win32con.FILE_ATTRIBUTE_HIDDEN | win32con.FILE_ATTRIBUTE_SYSTEM)
+        return False
+    except:
+        return False

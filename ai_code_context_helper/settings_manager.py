@@ -10,6 +10,7 @@ from pathlib import Path
 import os
 import sys
 
+from ai_code_context_helper.markdown_exporter import SUPPORTED_EXTENSIONS
 from ai_code_context_helper.config import (
     DEFAULT_PATH_PREFIX,
     DEFAULT_PATH_SUFFIX,
@@ -89,6 +90,10 @@ class SettingsManager:
         self.settings_changed = False
         self.max_history_items = MAX_HISTORY_ITEMS
 
+        self.include_markers = True
+        self.show_encoding = False
+        self.supported_extensions = SUPPORTED_EXTENSIONS
+
         self.load_settings()
 
     def load_settings(self):
@@ -111,8 +116,7 @@ class SettingsManager:
                         self.CODE_PREFIX = settings["code_prefix"]
                     if "code_suffix" in settings:
                         self.CODE_SUFFIX = settings["code_suffix"]
-
-                    self.show_hidden_value = settings.get("show_hidden", False)
+                    self.include_markers = settings.get("include_markers", self.include_markers)
                     self.show_files_value = settings.get("show_files", True)
                     self.show_folders_value = settings.get("show_folders", True)
                     self.use_relative_path_value = settings.get(
@@ -128,7 +132,9 @@ class SettingsManager:
                     )
                     self.use_gitignore_value = settings.get("use_gitignore", False)
                     self.is_topmost_value = settings.get("is_topmost", False)
-
+                    self.include_markers = settings.get("include_markers", self.include_markers)
+                    self.show_encoding = settings.get("show_encoding", self.show_encoding)
+                    self.supported_extensions = SUPPORTED_EXTENSIONS
                     # 加载目录历史和展开状态
                     self.dir_history = []
                     self.expanded_states = {}
@@ -162,7 +168,7 @@ class SettingsManager:
             return True
         
         try:
-            # 验证并构建设置数据（现有逻辑保持不变）
+            # 验证并构建设置数据
             valid_history = [path for path in self.dir_history if path and os.path.exists(path)]
             if len(valid_history) != len(self.dir_history):
                 self.dir_history = valid_history
@@ -191,6 +197,9 @@ class SettingsManager:
                 "enable_easy_multiselect": self.enable_easy_multiselect_value,
                 "use_gitignore": self.use_gitignore_value,
                 "is_topmost": self.is_topmost_value,
+                "include_markers": self.include_markers,
+                "show_encoding": self.show_encoding,
+                "supported_extensions": self.supported_extensions,
             }
 
             # 确保目录存在

@@ -11,8 +11,12 @@ Classes:
 
 from pathlib import Path
 from ai_code_context_helper.config import CHECK_MARK
-from ai_code_context_helper.file_utils import normalize_path
+from ai_code_context_helper.file_utils import normalize_path, has_hidden_attribute
+from ai_code_context_helper.file_utils import get_file_stats, is_ignored_by_gitignore
+from ai_code_context_helper.config import CHECK_MARK
 import os
+import traceback
+from tkinter import filedialog
 import re
 
 
@@ -235,7 +239,6 @@ class TreeOperations:
             print("目录树生成完成")
         except Exception as e:
             print(f"生成树时出错: {str(e)}")
-            import traceback
 
             traceback.print_exc()
             self.parent.status_var.set(self.parent.texts["error_msg"].format(str(e)))
@@ -358,7 +361,6 @@ class TreeOperations:
                     self._expand_path_by_parts(root_path, rel_path)
             except Exception as e:
                 print(f"展开路径 {rel_path} 时出错: {str(e)}")
-                import traceback
 
                 traceback.print_exc()
                 continue
@@ -512,9 +514,6 @@ class TreeOperations:
 
     def _populate_tree(self, directory_path, parent_id, level):
         """递归填充目录树视图"""
-        # 导入需要的模块和配置
-        from ai_code_context_helper.file_utils import get_file_stats, is_ignored_by_gitignore
-        from ai_code_context_helper.config import CHECK_MARK
     
         max_depth = self.parent.max_depth.get()
         if max_depth > 0 and level >= max_depth:
@@ -634,9 +633,6 @@ class TreeOperations:
         old_open_items,
     ):
         """带状态保留的目录树填充函数"""
-        # 导入需要的模块和配置
-        from ai_code_context_helper.file_utils import get_file_stats, is_ignored_by_gitignore
-        from ai_code_context_helper.config import CHECK_MARK
     
         max_depth = self.parent.max_depth.get()
         if max_depth > 0 and level >= max_depth:
@@ -859,7 +855,6 @@ class TreeOperations:
             self.parent.settings.settings_changed = True
         except Exception as e:
             print(f"处理展开事件时发生错误: {str(e)}")
-            import traceback
 
             traceback.print_exc()
 
@@ -1098,3 +1093,75 @@ class TreeOperations:
                 continue
 
             self._expand_item_recursively(child)
+
+    def get_selected_files(self):
+        """获取选中的文件路径列表"""
+        selected_items = self.parent.tree.selection()
+        files = []
+        # 创建节点ID到路径的反向映射
+        id_to_path = {v: k for k, v in self.parent.tree_items.items()}
+        
+        for item in selected_items:
+            if item in id_to_path:
+                path = id_to_path[item]
+                # 只添加文件，跳过目录
+                if os.path.isfile(path):
+                    files.append(path)
+        return files
+
+    def get_all_files_under_node(self, item_id):
+        """递归获取指定节点下的所有文件路径（包括未展开的目录）"""
+        files = []
+        # 获取节点对应的路径
+        path = None
+        for p, tree_id in self.parent.tree_items.items():
+            if tree_id == item_id:
+                path = p
+                break
+        
+        if not path:
+            return files
+        
+        # 如果是文件，直接返回
+        if os.path.isfile(path):
+            files.append(path)
+            return files
+        
+        # 如果是目录，递归收集所有文件
+        try:
+            for root, _, filenames in os.walk(path):
+                for filename in filenames:
+                    file_path = os.path.join(root, filename)
+                    # 应用与目录树相同的过滤规则
+                    if self.should_include_file(file_path):
+                        files.append(file_path)
+        except Exception as e:
+            print(f"扫描目录 {path} 时出错: {str(e)}")
+        
+        return files
+
+    def should_include_file(self, file_path):
+        """检查文件是否符合显示规则（与目录树相同的过滤条件）"""
+        # 应用.gitignore过滤
+        if self.parent.use_gitignore.get():
+            project_root = normalize_path(self.parent.dir_path.get().strip())
+            if is_ignored_by_gitignore(file_path, project_root):
+                return False
+        
+        # 应用文件过滤器
+        filter_pattern = self.parent.file_filter.get().strip()
+        if filter_pattern:
+            try:
+                pattern = re.compile(filter_pattern)
+                if not pattern.search(os.path.basename(file_path)):
+                    return False
+            except re.error:
+                pass
+        
+        # 检查隐藏文件设置
+        if not self.parent.show_hidden.get():
+            if os.path.basename(file_path).startswith('.') or \
+               (os.name == 'nt' and has_hidden_attribute(file_path)):
+                return False
+        
+        return True
