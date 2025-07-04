@@ -6,7 +6,7 @@
 
 ## Quick Start
 
-1. **Download**: [Releases](https://github.com/sansan0/ai-code-context-helper/releases)
+1. **Download**: [Releases](https://github.com/liujunhao228/ai-code-context-helper/releases)
 2. **Extract** and run `AI Code Context Helper.exe`
 3. **Select your project directory** to begin
 
@@ -25,28 +25,11 @@
 
 - **How**: Select one or more files
 - **Export**: Full path + code content for each file
-- **Example**:
-
-```
-# ai_code_context_helper/gui_components.py
-<file content...>
-
-# ai_code_context_helper/settings_manager.py
-<file content...>
-```
 
 ### 2. Folder Nodes Only
 
 - **How**: Select one or more folders only
 - **Export**: Directory tree structure (no code content)
-- **Example**:
-
-```
-ai_code_context_helper/
-  ├── __init__.py
-  ├── clipboard_operations.py
-  ├── ...
-```
 
 ### 3. Mixed Files and Folders
 
@@ -54,17 +37,6 @@ ai_code_context_helper/
 - **Export**:
   - Folders: directory tree structure
   - Files: path + code content
-- **Example**:
-
-```
-ai_code_context_helper/
-  ├── __init__.py
-  ├── clipboard_operations.py
-  ├── ...
-
-# run.py
-<file content...>
-```
 
 ### 4. Markdown Export
 
@@ -93,7 +65,7 @@ ai_code_context_helper/
 - Install dependencies:
 
   ```bash
-  git clone https://github.com/sansan0/ai-code-context-helper.git
+  git clone https://github.com/liujunhao228/ai-code-context-helper.git
   cd ai-code-context-helper
   poetry install
   ```

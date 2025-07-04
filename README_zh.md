@@ -5,7 +5,7 @@
 
 ## 快速开始
 
-1. **下载**：[Releases](https://github.com/sansan0/ai-code-context-helper/releases)
+1. **下载**：[Releases](https://github.com/liujunhao228/ai-code-context-helper/releases)
 2. **解压**，运行 `AI Code Context Helper.exe`
 3. **选择项目目录**，即可操作
 
@@ -25,25 +25,10 @@
 - **操作**：勾选一个或多个文件
 - **导出内容**：每个文件的完整路径 + 代码内容
 
-```
-# ai_code_context_helper/gui_components.py
-<文件内容...>
-
-# ai_code_context_helper/settings_manager.py
-<文件内容...>
-```
-
 ### 2. 只选文件夹节点
 
 - **操作**：只勾选一个或多个文件夹
 - **导出内容**：导出所选文件夹的目录树结构（不含具体代码）
-
-```
-ai_code_context_helper/
-  ├── __init__.py
-  ├── clipboard_operations.py
-  ├── ...
-```
 
 ### 3. 混合选择文件和文件夹
 
@@ -51,16 +36,6 @@ ai_code_context_helper/
 - **导出内容**：
   - 文件夹：导出其目录树结构
   - 文件：导出路径和代码内容
-
-```
-ai_code_context_helper/
-  ├── __init__.py
-  ├── clipboard_operations.py
-  ├── ...
-
-# run.py
-<文件内容...>
-```
 
 ### 4. Markdown 导出
 
@@ -89,7 +64,7 @@ ai_code_context_helper/
 - 安装依赖：
 
   ```bash
-  git clone https://github.com/sansan0/ai-code-context-helper.git
+  git clone https://github.com/liujunhao228/ai-code-context-helper.git
   cd ai-code-context-helper
   poetry install
   ```
