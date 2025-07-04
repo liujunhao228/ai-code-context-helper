@@ -4,6 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 import zipfile
+import re
 
 def run(cmd, check=True, shell=True):
     print(f"Running: {cmd}")
@@ -45,8 +46,31 @@ def main():
 
     # 6. Prepare new directory name
     basename = "ai-code-context-helper-master"
-    verstr = srcdir.name.replace("exe.", "win-")
-    newdir = build_dir / f"{basename}-{verstr}"
+    if srcdir.name.startswith("exe.win-"):
+        platform_str = srcdir.name[len("exe.win-"):]  # e.g. 'amd64-3.13' or 'amd64'
+        platform_str = platform_str.split("-")[0] if "-" in platform_str else platform_str
+        verstr = f"win-{platform_str}"
+    else:
+        verstr = srcdir.name[len("exe."):]  # fallback
+    version = input("Please enter release version (e.g. v1.0.0): ").strip()
+    if not version:
+        print("ERROR: No version entered.")
+        sys.exit(1)
+    # 读取CHANGELOG.md中与当前version匹配的最新一条
+    changelog_path = Path("CHANGELOG.md")
+    if changelog_path.exists():
+        with changelog_path.open("r", encoding="utf-8") as f:
+            changelog = f.read()
+        def extract_latest_changelog(changelog, version):
+            pattern = re.compile(rf"##\\s*{re.escape(version)}[\\s\\S]*?(?=^##\\s|\Z)", re.MULTILINE)
+            match = pattern.search(changelog)
+            if match:
+                return match.group(0)
+            return f"Auto release {version}"
+        release_note = extract_latest_changelog(changelog, version)
+    else:
+        release_note = f"Auto release {version}"
+    newdir = build_dir / f"{basename}-{verstr}-{version}"
     print(f"New directory name will be: {newdir}")
 
     # 7. Copy and rename directory
@@ -63,15 +87,9 @@ def main():
                 file_path = Path(root) / file
                 zipf.write(file_path, file_path.relative_to(newdir.parent))
 
-    # 9. Prompt for version
-    version = input("Please enter release version (e.g. v1.0.0): ").strip()
-    if not version:
-        print("ERROR: No version entered.")
-        sys.exit(1)
-
     # 10. Create GitHub release and upload zip
     print("Creating GitHub release...")
-    run(f'gh release create {version} "{zip_path}" --title "{version}" --notes "Auto release {version}"')
+    run(f'gh release create {version} "{zip_path}" --title "{version}" --notes """{release_note}"""')
 
     # 11. Clean up
     shutil.rmtree(newdir)
