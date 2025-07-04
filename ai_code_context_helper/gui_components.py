@@ -756,55 +756,24 @@ class GUIComponents:
     def export_markdown(self):
         """
         导出选中节点及其子节点的所有文件到Markdown
+        只负责界面交互和调用收集逻辑。
         """
         selected_items = self.parent.tree.selection()
         if not selected_items:
             self.parent.status_var.set(self.parent.texts.get("status_no_selection", "未选中任何项"))
             return
 
-        # 收集文件列表和对应的选中节点路径
-        files_with_base = []
-        
-        for item_id in selected_items:
-            # 获取选中节点的路径
-            base_path = None
-            for path, tree_id in self.parent.tree_items.items():
-                if tree_id == item_id:
-                    base_path = path
-                    break
-            
-            if not base_path:
-                continue
-                
-            # 获取当前节点下所有文件
-            file_paths = self.parent.tree_ops.get_all_files_under_node(item_id)
-            
-            # 为每个文件添加对应的选中节点路径
-            for file_path in file_paths:
-                files_with_base.append((file_path, base_path))
-
-        if not files_with_base:
+        # 新重构：收集所有需要导出的文件（只收集文件绝对路径）
+        files = self.collect_export_files(selected_items)
+        if not files:
             self.parent.status_var.set(self.parent.texts.get("status_no_text_files", "未找到可导出的文本文件"))
-            return
-        
-        # 根据支持的扩展名过滤文件
-        supported_exts = set(self.parent.settings.supported_extensions.keys())
-        filtered_files = []
-        for file_path, base_path in files_with_base:
-            _, ext = os.path.splitext(file_path)
-            if ext.lower() in supported_exts:
-                filtered_files.append((file_path, base_path))
-        
-        if not filtered_files:
-            self.parent.status_var.set("没有符合条件的文本文件（仅支持特定扩展名）")
             return
 
         # 设置默认文件名为项目根目录名
         base_dir = self.parent.dir_path.get().strip()
         if base_dir:
-            # 提取目录名
             dir_name = os.path.basename(base_dir)
-            if not dir_name:  # 如果路径以分隔符结尾
+            if not dir_name:
                 dir_name = os.path.basename(os.path.dirname(base_dir))
             default_filename = f"{dir_name}.md"
         else:
@@ -813,26 +782,79 @@ class GUIComponents:
         output_path = filedialog.asksaveasfilename(
             defaultextension=".md",
             filetypes=[("Markdown 文件", "*.md")],
-            initialfile=default_filename  # 设置默认文件名
+            initialfile=default_filename
         )
         if not output_path:
             return
 
-        # 调用Markdown生成逻辑
         include_markers = self.parent.settings.include_markers
         show_encoding = self.parent.settings.show_encoding
 
         success, errors = generate_markdown(
             output_path=output_path,
-            files=filtered_files,  # 使用过滤后的文件列表（包含文件路径和选中节点路径）
+            files=files,  # 只传递文件绝对路径
+            project_root=base_dir,  # 新增参数，传递项目根目录
             include_markers=include_markers,
             show_encoding=show_encoding
         )
 
-        # 更新状态栏
         if success > 0:
             self.parent.status_var.set(
                 self.parent.texts.get("status_export_success", "成功导出{0}个文件").format(success)
             )
         if errors:
             messagebox.showerror("导出错误", "\n".join(errors))
+
+    def collect_export_files(self, selected_items):
+        """
+        支持三种情况：
+        1. 只选文件夹节点时递归导出所有文件夹下的文件；
+        2. 只选文件节点时只导出这些文件；
+        3. 混合选择时递归导出文件夹下所有文件并导出选中文件，避免重复。
+        返回 [file_path, ...]
+        """
+        tree = self.parent.tree
+        tree_items = self.parent.tree_items
+        tree_ops = self.parent.tree_ops
+        supported_exts = set(self.parent.settings.supported_extensions.keys())
+        id_to_path = {v: k for k, v in tree_items.items()}
+        file_nodes = []
+        folder_nodes = []
+        for item in selected_items:
+            if item not in id_to_path:
+                continue
+            path = id_to_path[item]
+            if os.path.isfile(path):
+                file_nodes.append(item)
+            elif os.path.isdir(path):
+                folder_nodes.append(item)
+        result = set()
+        # 只选文件夹
+        if folder_nodes and not file_nodes:
+            for folder_item in folder_nodes:
+                file_paths = tree_ops.get_all_files_under_node(folder_item)
+                for file_path in file_paths:
+                    _, ext = os.path.splitext(file_path)
+                    if ext.lower() in supported_exts:
+                        result.add(file_path)
+        # 只选文件
+        elif file_nodes and not folder_nodes:
+            for file_item in file_nodes:
+                path = id_to_path[file_item]
+                _, ext = os.path.splitext(path)
+                if ext.lower() in supported_exts:
+                    result.add(path)
+        # 混合选择
+        else:
+            for folder_item in folder_nodes:
+                file_paths = tree_ops.get_all_files_under_node(folder_item)
+                for file_path in file_paths:
+                    _, ext = os.path.splitext(file_path)
+                    if ext.lower() in supported_exts:
+                        result.add(file_path)
+            for file_item in file_nodes:
+                path = id_to_path[file_item]
+                _, ext = os.path.splitext(path)
+                if ext.lower() in supported_exts:
+                    result.add(path)
+        return list(result)

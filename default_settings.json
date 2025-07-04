@@ -12,10 +12,28 @@
   "language": "zh_CN",
   "directory_history": [
     {
-      "path": "D:\\blblcd",
+      "path": "C:\\0",
       "expanded_paths": [
         ".",
-        "blblcd"
+        "1",
+        "1\\2",
+        "1\\2\\a",
+        "1\\2\\b",
+        "1\\2\\b\\l",
+        "1\\2\\c"
+      ]
+    },
+    {
+      "path": "D:\\ai-code-context-helper-master",
+      "expanded_paths": [
+        ".",
+        "ai_code_context_helper"
+      ]
+    },
+    {
+      "path": "D:\\ai-code-context-helper-master\\ai_code_context_helper",
+      "expanded_paths": [
+        "."
       ]
     },
     {
@@ -25,7 +43,44 @@
         "2",
         "2\\a",
         "2\\b",
-        "2\\c"
+        "2\\b\\l",
+        "2\\c",
+        "2\\c\\m"
+      ]
+    },
+    {
+      "path": "E:\\bilibili-comments-viewer-go",
+      "expanded_paths": [
+        ".",
+        "crawler",
+        "crawler\\blblcd",
+        "crawler\\blblcd\\store"
+      ]
+    },
+    {
+      "path": "C:\\blblcd-main",
+      "expanded_paths": [
+        "."
+      ]
+    },
+    {
+      "path": "C:\\",
+      "expanded_paths": [
+        ".",
+        "$RECYCLE.BIN",
+        "$RECYCLE.BIN\\S-1-5-21-2050196314-3286351601-972620569-500",
+        "1",
+        "1\\2",
+        "1\\2\\a",
+        "1\\2\\b",
+        "1\\2\\c"
+      ]
+    },
+    {
+      "path": "D:\\blblcd",
+      "expanded_paths": [
+        ".",
+        "blblcd"
       ]
     }
   ],
@@ -34,7 +89,7 @@
   "use_gitignore": true,
   "is_topmost": false,
   "include_markers": true,
-  "show_encoding": false,
+  "show_encoding": true,
   "supported_extensions": {
     ".py": "python",
     ".js": "javascript",

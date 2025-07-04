@@ -121,78 +121,56 @@ def get_relative_display_path(file_path: str, base_dir: str) -> str:
         return os.path.basename(file_path)
 
 def generate_markdown(output_path: str, 
-                      files: List[Tuple[str, str]],  # 改为元组列表：(文件路径, 选中节点路径)
+                      files: list,  # 只接收文件绝对路径列表
+                      project_root: str,  # 新增参数，项目根目录
                       include_markers: bool = True, 
                       show_encoding: bool = False) -> Tuple[int, List[str]]:
     """
     生成最终Markdown文件
-    
     Args:
         output_path: 输出文件路径
-        files: 要处理的文件列表，每个元素是 (文件路径, 选中节点路径)
+        files: 要处理的文件列表，每个元素是文件绝对路径
+        project_root: 项目根目录
         include_markers: 是否包含代码块标记
         show_encoding: 是否显示编码信息
-    
     Returns:
         (成功数量, 错误信息列表)
     """
     error_files = []
     processed = 0
-    
     try:
         with open(output_path, 'w', encoding='utf-8') as md_file:
-            for file_path, base_dir in files:  # 解包元组
+            for file_path in files:
                 try:
-                    # 验证文件有效性
                     if not os.path.isfile(file_path) or not os.access(file_path, os.R_OK):
                         error_files.append(f"无效文件: {file_path}")
                         continue
-                    
-                    # 获取相对路径 - 使用选中节点路径作为基准
-                    display_path = get_relative_display_path(file_path, base_dir)
-                    
-                    # 检测语言类型
+                    # 用项目根目录生成相对路径
+                    display_path = get_relative_display_path(file_path, project_root)
                     _, ext = os.path.splitext(display_path)
                     lang = SUPPORTED_EXTENSIONS.get(ext.lower(), '')
-                    
-                    # 读取文件内容
                     content, encoding = read_file_with_encoding(file_path)
                     if content is None:
                         error_files.append(f"编码错误: {file_path}")
                         continue
-                    
-                    # 构建Markdown内容
                     header = f"### {display_path}\n"
                     md_file.write(header)
-                    
-                    # 新增：显示文件编码信息（如果启用）
                     if show_encoding and encoding:
-                        # 清理编码描述（移除错误处理信息）
                         clean_enc = encoding.replace(" (替换错误字符)", "")
                         md_file.write(f"<!-- 文件编码: {clean_enc} -->\n")
-                    
-                    # 新增：添加开始标记（如果启用）
                     if include_markers:
-                        md_file.write(f"<!-- [START OF FILE: {display_path}] -->\n")
-                    
-                    # 写入代码块
+                        md_file.write(f"<!-- [START OF FILE: {os.path.basename(file_path)}] -->\n")
                     code_block = f"```{lang}\n"
                     md_file.write(code_block)
                     md_file.write(content)
                     if not content.endswith('\n'):
                         md_file.write('\n')
                     md_file.write("```\n\n")
-                    
-                    # 新增：添加结束标记（如果启用）
                     if include_markers:
-                        md_file.write(f"<!-- [END OF FILE: {display_path}] -->\n\n")
-                    
+                        md_file.write(f"<!-- [END OF FILE: {os.path.basename(file_path)}] -->\n\n")
                     processed += 1
-                    
                 except Exception as e:
                     error_files.append(f"处理失败 ({file_path}): {str(e)}")
-    
     except Exception as e:
         error_files.append(f"写入失败: {str(e)}")
-    
     return processed, error_files
